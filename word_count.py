@@ -1,4 +1,5 @@
-#
+
+
 # Escriba la función load_input que recive como parámetro un folder y retorna
 # una lista de tuplas donde el primer elemento de cada tupla es el nombre del
 # archivo y el segundo es una línea del archivo. La función convierte a tuplas
@@ -12,12 +13,26 @@
 #     ...
 #     ('text2.txt'. 'hypotheses.')
 #   ]
-#
+
+import glob
+import fileinput
 def load_input(input_directory):
-    pass
+    ''' A partir de un directorio, retorna una lista de tuplas donde el primer elemento de cada tupla es el 
+        nombre del archivo y el segundo es una línea del archivo.'''
+
+    # Retorna el nombre de los archivos en el directorio
+    filenames = glob.glob(input_directory + "/*.*")
+
+    sequence = []
+
+    # Itera sobre todos los archivos y añade a secuencia el nombre del archivo acctual y su contenido
+    with fileinput.input(files=filenames) as f:
+        for line in f:
+            sequence.append((f.filename(), line))
+
+    return sequence
 
 
-#
 # Escriba una función llamada maper que recibe una lista de tuplas de la
 # función anterior y retorna una lista de tuplas (clave, valor). En este caso,
 # la clave es cada palabra y el valor es 1, puesto que se está realizando un
@@ -28,9 +43,16 @@ def load_input(input_directory):
 #     ('is', 1),
 #     ...
 #   ]
-#
+
+
 def mapper(sequence):
-    pass
+    ''' A partir de una lista de tuplas, retorna una lista de tuplas (clave, valor). 
+        En este caso, la clave es cada palabra y el valor es 1'''
+    
+    # Itera sobre la lista de tuplas y añade a new_sequence una tupla por cada palabra en la línea
+    new_sequence = [(word.lower().replace(".", "").replace(",", ""), 1) 
+                    for _, line in sequence for word in line.split()]
+    return new_sequence
 
 
 #
@@ -45,8 +67,11 @@ def mapper(sequence):
 #   ]
 #
 def shuffle_and_sort(sequence):
-    pass
+    ''' A partir de una lista de tuplas, retorna una lista con el mismo contenido ordenado por la clave.'''
 
+    # Ordena la lista de tuplas por la clave obtenida con la función lambda
+    sequence = sorted(sequence, key=lambda x: x[0])
+    return sequence
 
 #
 # Escriba la función reducer, la cual recibe el resultado de shuffle_and_sort y
@@ -54,17 +79,32 @@ def shuffle_and_sort(sequence):
 # ejemplo, la reducción indica cuantas veces aparece la palabra analytics en el
 # texto.
 #
+
+from itertools import groupby
 def reducer(sequence):
-    pass
+    new_sequence = []
+
+    # Agrupa los elementos de la lista por la clave y suma los valores asociados a cada clave
+    for k, g in groupby(sequence, key=lambda x: x[0]):
+        key = k
+        # Suma los valores asociados a cada tupla con la misma clave
+        values = sum(values for _, values in g)
+        new_sequence.append((key, values))
+    
+    return new_sequence
 
 
-#
 # Escriba la función create_ouptput_directory que recibe un nombre de directorio
 # y lo crea. Si el directorio existe, la función falla.
-#
-def create_ouptput_directory(output_directory):
-    pass
 
+import os
+def create_ouptput_directory(output_directory):
+    ''' Crea un directorio con el nombre entregado como parámetro.'''
+
+    if os.path.isdir(output_directory):
+        raise Exception('El directorio ya existe')
+    else:
+        os.mkdir(output_directory)
 
 #
 # Escriba la función save_output, la cual almacena en un archivo de texto llamado
@@ -75,23 +115,37 @@ def create_ouptput_directory(output_directory):
 # separados por un tabulador.
 #
 def save_output(output_directory, sequence):
-    pass
+    ''' Escribe en el archivo part-00000 el resultado del reducer.'''
+
+    # Nombre del archivo dependiendo del directorio entregado
+    filename = os.path.join(output_directory, 'part-00000')
+
+    # Escribe en el archivo part-00000 el resultado del reducer
+    with open(filename, 'w') as f:
+        for key, value in sequence:
+            f.write(f'{key}\t{value}\n') 
 
 
-#
 # La siguiente función crea un archivo llamado _SUCCESS en el directorio
 # entregado como parámetro.
 #
 def create_marker(output_directory):
-    pass
+    with open(os.path.join(output_directory, '_SUCCESS'), 'w') as f:
+        f.write('')
 
 
-#
 # Escriba la función job, la cual orquesta las funciones anteriores.
 #
 def job(input_directory, output_directory):
-    pass
+    ''' Orquesta las funciones anteriores.'''
 
+    sequence = load_input(input_directory)
+    sequence = mapper(sequence)
+    sequence = shuffle_and_sort(sequence)
+    sequence = reducer(sequence)
+    create_ouptput_directory(output_directory)
+    save_output(output_directory, sequence)
+    create_marker(output_directory)
 
 if __name__ == "__main__":
     job(
